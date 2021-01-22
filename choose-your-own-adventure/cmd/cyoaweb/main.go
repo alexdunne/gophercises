@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -20,14 +19,12 @@ func main() {
 		exit(fmt.Sprintf("Something went wrong whilst opening the file %s", *filename))
 	}
 
-	decoder := json.NewDecoder(file)
-	var story cyoa.Story
-	if err := decoder.Decode(&story); err != nil {
+	story, err := cyoa.JsonStory(file)
+	if err != nil {
 		exit(fmt.Sprintf("Something went wrong whilst decoding the file %s", *filename))
 	}
 
 	fmt.Printf("%+v\n", story)
-
 }
 
 func exit(msg string) {
