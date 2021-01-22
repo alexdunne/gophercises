@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"strings"
 )
 
 var defaultHandlerTemplate = `
@@ -42,11 +43,28 @@ type handler struct {
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	storyTemplate := template.Must(template.New("").Parse(defaultHandlerTemplate))
 
-	err := storyTemplate.Execute(w, h.s["intro"])
+	path := strings.TrimSpace(r.URL.Path)
 
-	if err != nil {
-		panic(err)
+	if path == "" || path == "/" {
+		// Act like they went to "/intro"
+		path = "/intro"
 	}
+
+	// Remove the leading slash
+	path = path[1:]
+
+	// Check if the chapter exists
+	if chapter, ok := h.s[path]; ok {
+		err := storyTemplate.Execute(w, chapter)
+
+		if err != nil {
+			http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		}
+
+		return
+	}
+
+	http.Error(w, "Chapter not found", http.StatusNotFound)
 }
 
 func JsonStory(r io.Reader) (Story, error) {
