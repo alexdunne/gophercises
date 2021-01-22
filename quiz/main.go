@@ -6,13 +6,23 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 func main() {
 	csvFilename := flag.String("csv", "problems.csv", "a csv file in the format of question,answer")
-
+	timeLimit := flag.Int("limit", 30, "the time limit for the quiz in seconds")
 	flag.Parse()
 
+	lines := readLines(csvFilename)
+	problems := parseLines(lines)
+
+	timer := time.NewTimer(time.Duration(*timeLimit) * time.Second)
+
+	askQuestions(problems, timer)
+}
+
+func readLines(csvFilename *string) [][]string {
 	file, err := os.Open(*csvFilename)
 	if err != nil {
 		exit(fmt.Sprintf("Failed to opent he CSV file: %s\n", *csvFilename))
@@ -24,9 +34,7 @@ func main() {
 		exit("Couldn't open the file")
 	}
 
-	problems := parseLines(lines)
-
-	askQuestions(problems)
+	return lines
 }
 
 func parseLines(lines [][]string) []Problem {
@@ -42,18 +50,25 @@ func parseLines(lines [][]string) []Problem {
 	return problems
 }
 
-func askQuestions(problems []Problem) {
+func askQuestions(problems []Problem, timer *time.Timer) {
 	correct := 0
 
 	for i, p := range problems {
-		fmt.Printf("Problem #%d: %s = \n", i+1, p.question)
+		select {
+		case <-timer.C:
+			fmt.Printf("Times up. You scored %d out of %d\n", correct, len(problems))
+			return
+		default:
+			fmt.Printf("Problem #%d: %s = ", i+1, p.question)
 
-		var guess string
-		fmt.Scanf("%s\n", &guess)
+			var guess string
+			fmt.Scanf("%s\n", &guess)
 
-		if guess == p.answer {
-			correct++
+			if guess == p.answer {
+				correct++
+			}
 		}
+
 	}
 
 	fmt.Printf("You scored %d out of %d\n", correct, len(problems))
