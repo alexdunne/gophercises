@@ -54,21 +54,29 @@ func askQuestions(problems []Problem, timer *time.Timer) {
 	correct := 0
 
 	for i, p := range problems {
-		select {
-		case <-timer.C:
-			fmt.Printf("Times up. You scored %d out of %d\n", correct, len(problems))
-			return
-		default:
-			fmt.Printf("Problem #%d: %s = ", i+1, p.question)
+		fmt.Printf("Problem #%d: %s = ", i+1, p.question)
 
+		guessCh := make(chan string)
+
+		go func() {
+			// Scanf is a blocking call so instead of having it in the loop
+			// we instead move it to a goroutine and send it back via a channel
+			// Now in the switch we can wait for either an answer or for the timer to elapse
 			var guess string
 			fmt.Scanf("%s\n", &guess)
 
+			guessCh <- guess
+		}()
+
+		select {
+		case <-timer.C:
+			fmt.Printf("\nTimes up. You scored %d out of %d\n", correct, len(problems))
+			return
+		case guess := <-guessCh:
 			if guess == p.answer {
 				correct++
 			}
 		}
-
 	}
 
 	fmt.Printf("You scored %d out of %d\n", correct, len(problems))
