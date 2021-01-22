@@ -3,12 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 
 	"cyoa"
 )
 
 func main() {
+	port := flag.Int("port", 3000, "Web default port")
 	filename := flag.String("file", "gopher.json", "The story JSON file")
 	flag.Parse()
 	fmt.Printf("Story %s loaded\n", *filename)
@@ -24,7 +27,9 @@ func main() {
 		exit(fmt.Sprintf("Something went wrong whilst decoding the file %s", *filename))
 	}
 
-	fmt.Printf("%+v\n", story)
+	handler := cyoa.NewHandler(story)
+	fmt.Printf("Starting port on :%d\n", *port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), handler))
 }
 
 func exit(msg string) {
