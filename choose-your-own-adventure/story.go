@@ -32,17 +32,35 @@ var defaultHandlerTemplate = `
 </body>
 </html>`
 
-func NewHandler(s Story) http.Handler {
-	return handler{s}
+type HandlerOption func(h *handler)
+
+func WithTemplate(t *template.Template) HandlerOption {
+	return func(h *handler) {
+		h.template = t
+	}
 }
 
-type handler struct {
-	s Story
+func WithParseFunc(p func(r *http.Request) string) HandlerOption {
+	return func(h *handler) {
+		h.parsePathFn = p
+	}
 }
 
-func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	storyTemplate := template.Must(template.New("").Parse(defaultHandlerTemplate))
+func NewHandler(s Story, opts ...HandlerOption) http.Handler {
+	h := handler{
+		story:       s,
+		template:    template.Must(template.New("").Parse(defaultHandlerTemplate)),
+		parsePathFn: parsePath,
+	}
 
+	for _, opt := range opts {
+		opt(&h)
+	}
+
+	return h
+}
+
+func parsePath(r *http.Request) string {
 	path := strings.TrimSpace(r.URL.Path)
 
 	if path == "" || path == "/" {
@@ -53,9 +71,21 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Remove the leading slash
 	path = path[1:]
 
+	return path
+}
+
+type handler struct {
+	story       Story
+	template    *template.Template
+	parsePathFn func(r *http.Request) string
+}
+
+func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	path := h.parsePathFn(r)
+
 	// Check if the chapter exists
-	if chapter, ok := h.s[path]; ok {
-		err := storyTemplate.Execute(w, chapter)
+	if chapter, ok := h.story[path]; ok {
+		err := h.template.Execute(w, chapter)
 
 		if err != nil {
 			http.Error(w, "Something went wrong", http.StatusInternalServerError)
