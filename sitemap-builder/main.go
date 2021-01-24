@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"flag"
 	"fmt"
 	"io"
@@ -8,6 +9,14 @@ import (
 	"os"
 	"strings"
 )
+
+type urlset struct {
+	Urls []loc `xml:"url"`
+}
+
+type loc struct {
+	Value string `xml:"loc"`
+}
 
 func main() {
 	url := flag.String("url", "", "URL starting point")
@@ -22,11 +31,22 @@ func main() {
 	// 3. Download unvisited pages and repeat the above
 	// Once all pages have been visited then we're done
 
-	domain := "https://adbuilder.io"
+	urls := fetchAllSiteURLs(*url, *url)
 
-	urls := fetchAllSiteURLs(domain, "https://adbuilder.io/")
+	var xmlToConvert urlset
 
-	fmt.Println(urls)
+	for _, url := range urls {
+		xmlToConvert.Urls = append(xmlToConvert.Urls, loc{Value: url})
+	}
+
+	encoder := xml.NewEncoder(os.Stdout)
+	encoder.Indent("", "  ")
+	err := encoder.Encode(&xmlToConvert)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println()
 }
 
 func fetchAllSiteURLs(domain, startURL string) []string {
@@ -45,6 +65,7 @@ func fetchAllSiteURLs(domain, startURL string) []string {
 
 		links, err := Parse(contents)
 		if err != nil {
+			fmt.Println(err)
 			exit(fmt.Sprintf("Something went wrong whilst extracting the links for %s", currentURL))
 		}
 
