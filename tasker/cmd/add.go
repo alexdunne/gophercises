@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"strings"
+	"tasker/db"
 
 	"github.com/spf13/cobra"
 )
@@ -13,6 +14,14 @@ var addCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		task := strings.Join(args, " ")
 		fmt.Println(task)
+
+		database, err := db.ConnectDB()
+		if err != nil {
+			panic(err)
+		}
+
+		h := NewCommandHandler(database)
+
 	},
 }
 
