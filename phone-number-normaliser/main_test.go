@@ -2,35 +2,25 @@ package main
 
 import "testing"
 
-func TestNormaliseWithCorrectFormat(t *testing.T) {
-	input := "1234567890"
-	output := Normalise(input)
-
-	want := "1234567890"
-
-	if want != output {
-		t.Fatalf(`Normalise("%s") = %s, want match for %s`, input, output, want)
-	}
+type normaliseTestCase struct {
+	input string
+	want  string
 }
 
-func TestNormaliseWithSpaces(t *testing.T) {
-	input := "123 456 7891"
-	output := Normalise(input)
-
-	want := "1234567891"
-
-	if want != output {
-		t.Fatalf(`Normalise("%s") = %s, want match for %s`, input, output, want)
+func TestNormalise(t *testing.T) {
+	testCases := []normaliseTestCase{
+		{input: "1234567890", want: "1234567890"},
+		{input: "123 456 7891", want: "1234567891"},
+		{input: "(123) 456 7892", want: "1234567892"},
 	}
-}
 
-func TestNormaliseWithBrackets(t *testing.T) {
-	input := "(123) 456 7892"
-	output := Normalise(input)
+	for _, testCase := range testCases {
+		t.Run(testCase.input, func(t *testing.T) {
+			actual := normalise(testCase.input)
 
-	want := "1234567892"
-
-	if want != output {
-		t.Fatalf(`Normalise("%s") = %s, want match for %s`, input, output, want)
+			if actual != testCase.want {
+				t.Errorf("got %s; want %s", actual, testCase.want)
+			}
+		})
 	}
 }
