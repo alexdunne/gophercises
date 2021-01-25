@@ -11,3 +11,5 @@ Run the command
 ```
 go run .
 ```
+
+`adminer` has also been started. View your database at `localhost:8080`

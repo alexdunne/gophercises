@@ -20,7 +20,7 @@ func main() {
 	db := createDBConnection()
 	defer db.Close()
 
-	must(db.Ping())
+	must(migrate(db))
 }
 
 func createDBConnection() *sql.DB {
@@ -32,6 +32,18 @@ func createDBConnection() *sql.DB {
 	}
 
 	return db
+}
+
+func migrate(db *sql.DB) error {
+	stmt := `
+		CREATE TABLE IF NOT EXISTS phone_numbers (
+			id SERIAL,
+			value VARCHAR(255)
+		)
+	`
+	_, err := db.Exec(stmt)
+
+	return err
 }
 
 func must(err error) {
