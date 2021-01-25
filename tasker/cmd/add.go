@@ -21,7 +21,7 @@ var addCmd = &cobra.Command{
 
 		store := db.NewStore(database)
 
-		_, err = store.CreateTask(task)
+		_, err = store.CreateTask(&db.Task{Description: task})
 		if err != nil {
 			panic(err)
 		}

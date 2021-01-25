@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "Lists all active tasks",
+var completedCmd = &cobra.Command{
+	Use:   "completed",
+	Short: "Lists all completed tasks",
 	Run: func(cmd *cobra.Command, args []string) {
 		database, err := db.ConnectDB()
 		if err != nil {
@@ -18,17 +18,17 @@ var listCmd = &cobra.Command{
 
 		store := db.NewStore(database)
 
-		tasks, err := store.FindAllActiveTasks()
+		tasks, err := store.FindAllCompletedTasks()
 		if err != nil {
 			panic(err)
 		}
 
 		if len(tasks) == 0 {
-			fmt.Println("You have no tasks :D")
+			fmt.Println("You haven't completed any tasks yet :(")
 			return
 		}
 
-		fmt.Println("You have the following tasks:")
+		fmt.Println("Here are your completed tasks:")
 		for _, task := range tasks {
 			fmt.Printf("%d. %s\n", task.ID, task.Description)
 		}
@@ -36,5 +36,5 @@ var listCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(completedCmd)
 }

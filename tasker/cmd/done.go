@@ -8,9 +8,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var removeCmd = &cobra.Command{
-	Use:   "remove",
-	Short: "Removes a task",
+var doneCmd = &cobra.Command{
+	Use:   "done",
+	Short: "Marks a task as completed",
 	Run: func(cmd *cobra.Command, args []string) {
 		var taskIDs []int
 
@@ -32,21 +32,12 @@ var removeCmd = &cobra.Command{
 		store := db.NewStore(database)
 
 		for _, taskID := range taskIDs {
-			store.DeleteTask(taskID)
-			fmt.Printf("Task %d removed\n", taskID)
+			store.MarkTaskAsComplete(taskID)
+			fmt.Printf("Task %d marked as completed\n", taskID)
 		}
 	},
 }
 
-var rmAlias = &cobra.Command{
-	Use:   "rm",
-	Short: "alias for remove",
-	Run: func(cmd *cobra.Command, args []string) {
-		removeCmd.Run(cmd, args)
-	},
-}
-
 func init() {
-	rootCmd.AddCommand(removeCmd)
-	rootCmd.AddCommand(rmAlias)
+	rootCmd.AddCommand(doneCmd)
 }

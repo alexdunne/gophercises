@@ -2,6 +2,7 @@ package db
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"path/filepath"
 	"time"
 
@@ -65,56 +66,118 @@ type Store struct {
 }
 
 type Task struct {
-	Key   int
-	Value string
+	ID          int
+	Description string
+	Completed   bool
 }
 
 func NewStore(db *bolt.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) CreateTask(task string) (int, error) {
-	var id int
-	err := s.db.Update(func(tx *bolt.Tx) error {
-		bucket := tx.Bucket(taskBucket)
-
-		id64, _ := bucket.NextSequence()
-		id = int(id64)
-		key := itob(id)
-
-		bucket.Put(key, []byte(task))
-
-		return nil
-	})
-	if err != nil {
-		return -1, err
-	}
-
-	return id, nil
-}
-
-func (s *Store) FindAllTasks() ([]Task, error) {
+func (s *Store) FindAllActiveTasks() ([]Task, error) {
 	var tasks []Task
 
-	err := s.db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket(taskBucket)
-
-		cursor := b.Cursor()
-
-		for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
+	err := forEachTask(s.db, func(k []byte, t Task) {
+		if !t.Completed {
 			tasks = append(tasks, Task{
-				Key:   btoi(k),
-				Value: string(v),
+				ID:          btoi(k),
+				Description: t.Description,
+				Completed:   t.Completed,
 			})
 		}
-
-		return nil
 	})
+
 	if err != nil {
 		return nil, err
 	}
 
 	return tasks, nil
+}
+
+func (s *Store) FindAllCompletedTasks() ([]Task, error) {
+	var tasks []Task
+
+	err := forEachTask(s.db, func(k []byte, t Task) {
+		if t.Completed {
+			tasks = append(tasks, Task{
+				ID:          btoi(k),
+				Description: t.Description,
+				Completed:   t.Completed,
+			})
+		}
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+func forEachTask(db *bolt.DB, fn func(k []byte, t Task)) error {
+	return db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket(taskBucket)
+
+		cursor := b.Cursor()
+
+		for k, v := cursor.First(); k != nil; k, v = cursor.Next() {
+			var task Task
+			err := json.Unmarshal(v, &task)
+			if err != nil {
+				return err
+			}
+
+			fn(k, task)
+		}
+
+		return nil
+	})
+}
+
+func (s *Store) CreateTask(t *Task) (*Task, error) {
+	err := s.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(taskBucket)
+
+		id, _ := b.NextSequence()
+		t.ID = int(id)
+
+		buf, err := json.Marshal(t)
+		if err != nil {
+			return err
+		}
+
+		return b.Put(itob(t.ID), buf)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
+}
+
+func (s *Store) MarkTaskAsComplete(id int) error {
+	return s.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(taskBucket)
+
+		key := itob(id)
+
+		var task Task
+		t := b.Get(key)
+		err := json.Unmarshal(t, &task)
+		if err != nil {
+			return err
+		}
+
+		task.Completed = true
+
+		buf, err := json.Marshal(task)
+		if err != nil {
+			return err
+		}
+
+		return b.Put(key, buf)
+	})
 }
 
 func (s *Store) DeleteTask(key int) error {
