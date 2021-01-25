@@ -20,10 +20,7 @@ func main() {
 	db := createDBConnection()
 	defer db.Close()
 
-	err := db.Ping()
-	if err != nil {
-		panic(err)
-	}
+	must(db.Ping())
 }
 
 func createDBConnection() *sql.DB {
@@ -35,6 +32,12 @@ func createDBConnection() *sql.DB {
 	}
 
 	return db
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 // normalise removes all non-number characters from a string
