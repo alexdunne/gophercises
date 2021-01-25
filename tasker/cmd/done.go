@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"strconv"
+	"tasker/db"
 
 	"github.com/spf13/cobra"
 )
@@ -11,7 +12,7 @@ var doneCmd = &cobra.Command{
 	Use:   "done",
 	Short: "Marks a task as done",
 	Run: func(cmd *cobra.Command, args []string) {
-		var taskIds []int
+		var taskIDs []int
 
 		for _, arg := range args {
 			id, err := strconv.Atoi(arg)
@@ -20,10 +21,20 @@ var doneCmd = &cobra.Command{
 				continue
 			}
 
-			taskIds = append(taskIds, id)
+			taskIDs = append(taskIDs, id)
 		}
 
-		fmt.Println(taskIds)
+		database, err := db.ConnectDB()
+		if err != nil {
+			panic(err)
+		}
+
+		store := db.NewStore(database)
+
+		for _, taskID := range taskIDs {
+			store.DeleteTask(taskID)
+			fmt.Printf("Task %d marked as complete\n", taskID)
+		}
 	},
 }
 

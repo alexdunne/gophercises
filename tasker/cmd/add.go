@@ -13,15 +13,20 @@ var addCmd = &cobra.Command{
 	Short: "Add a new task to the list",
 	Run: func(cmd *cobra.Command, args []string) {
 		task := strings.Join(args, " ")
-		fmt.Println(task)
 
 		database, err := db.ConnectDB()
 		if err != nil {
 			panic(err)
 		}
 
-		h := NewCommandHandler(database)
+		store := db.NewStore(database)
 
+		_, err = store.CreateTask(task)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Task added")
 	},
 }
 

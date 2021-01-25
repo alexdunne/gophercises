@@ -117,6 +117,15 @@ func (s *Store) FindAllTasks() ([]Task, error) {
 	return tasks, nil
 }
 
+func (s *Store) DeleteTask(key int) error {
+	return s.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket(taskBucket)
+
+		return b.Delete(itob(key))
+	})
+
+}
+
 // itob converts an int to a byte slice
 // Big/Little endian determines the order of the bytes
 // Big endian means the most significant bits are stores first
