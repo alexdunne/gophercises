@@ -28,7 +28,29 @@ func main() {
 	must(err)
 
 	for _, phoneNumber := range phoneNumbers {
-		fmt.Printf("%d: %s\n", phoneNumber.id, phoneNumber.value)
+		fmt.Printf("Normalising %s (id: %d)\n", phoneNumber.value, phoneNumber.id)
+
+		normalisedNumber := normalise(phoneNumber.value)
+
+		if phoneNumber.value == normalisedNumber {
+			fmt.Println("Nothing to see here")
+			continue
+		}
+
+		fmt.Printf("Found a difference (before: '%s', after: '%s')\n", phoneNumber.value, normalisedNumber)
+
+		existing, err := getPhoneByValue(db, normalisedNumber)
+		must(err)
+
+		// Value doesn't exist in the DB so update the current record
+		if existing == nil {
+			phoneNumber.value = normalisedNumber
+			must(updatePhone(db, phoneNumber))
+			continue
+		}
+
+		// Value already exists at least once so delete the current record
+		must(deletePhone(db, phoneNumber))
 	}
 }
 
@@ -122,6 +144,31 @@ func getAllPhoneNumbers(db *sql.DB) ([]phoneNumber, error) {
 	}
 
 	return ret, nil
+}
+
+func getPhoneByValue(db *sql.DB, value string) (*phoneNumber, error) {
+	var p phoneNumber
+
+	err := db.QueryRow("SELECT id, value from phone_numbers WHERE value = $1", value).Scan(&p.id, &p.value)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &p, err
+}
+
+func updatePhone(db *sql.DB, phone phoneNumber) error {
+	_, err := db.Exec("UPDATE phone_numbers SET value = $2 WHERE id = $1", phone.id, phone.value)
+	return err
+}
+
+func deletePhone(db *sql.DB, phone phoneNumber) error {
+	_, err := db.Exec("DELETE FROM phone_numbers WHERE id = $1", phone.id)
+	return err
 }
 
 func must(err error) {
