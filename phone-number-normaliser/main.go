@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"regexp"
@@ -21,6 +22,7 @@ func main() {
 	defer db.Close()
 
 	must(migrate(db))
+	must(seed(db))
 }
 
 func createDBConnection() *sql.DB {
@@ -35,15 +37,55 @@ func createDBConnection() *sql.DB {
 }
 
 func migrate(db *sql.DB) error {
+	_, err := db.Exec(`DROP TABLE IF EXISTS phone_numbers`)
+	if err != nil {
+		return err
+	}
+
 	stmt := `
 		CREATE TABLE IF NOT EXISTS phone_numbers (
 			id SERIAL,
 			value VARCHAR(255)
 		)
 	`
-	_, err := db.Exec(stmt)
+	_, err = db.Exec(stmt)
 
 	return err
+}
+
+func seed(db *sql.DB) error {
+	phoneNumbers := []string{
+		"1234567890",
+		"123 456 7891",
+		"(123) 456 7892",
+		"(123) 456-7893",
+		"123-456-7894",
+		"123-456-7890",
+		"1234567892",
+		"(123)456-7892",
+	}
+
+	ctx := context.Background()
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	for _, number := range phoneNumbers {
+		_, err := tx.Exec("INSERT INTO phone_numbers(value) VALUES($1)", number)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func must(err error) {
