@@ -1,7 +1,10 @@
 //go:generate stringer -type=Suit,Rank
 package deck
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 type Suit uint8
 
@@ -52,14 +55,43 @@ func (c Card) String() string {
 	return fmt.Sprintf("%s of %ss", c.Rank.String(), c.Suit.String())
 }
 
-func New() []Card {
-	var cards []Card
+type OptsFunc func([]Card) []Card
 
+// New creates a deck of cards represented a slice. A deck is made up of a card of each Rank for each Suit
+func New(opts ...OptsFunc) []Card {
+	var cards []Card
 	for _, suit := range suits {
 		for rank := minRank; rank <= maxRank; rank++ {
 			cards = append(cards, Card{Suit: suit, Rank: rank})
 		}
 	}
 
+	for _, opt := range opts {
+		cards = opt(cards)
+	}
+
 	return cards
+}
+
+func DefaultSort(cards []Card) []Card {
+	sort.Slice(cards, Less(cards))
+	return cards
+}
+
+func Sort(less func(cards []Card) func(i, j int) bool) func([]Card) []Card {
+	return func(c []Card) []Card {
+		sort.Slice(c, less(c))
+		return c
+	}
+}
+
+func Less(cards []Card) func(i, j int) bool {
+	return func(i, j int) bool {
+		return absRank(cards[i]) < absRank(cards[j])
+	}
+}
+
+// absRank calculates the absolute rank of a given card based on its Suit and Rank
+func absRank(c Card) int {
+	return int(c.Suit)*int(maxRank) + int(c.Rank)
 }
