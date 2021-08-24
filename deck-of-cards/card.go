@@ -138,3 +138,15 @@ func Filter(f func(c Card) bool) func([]Card) []Card {
 	}
 }
 
+// Deck appends a duplicate set of given cards to the given cards
+func Deck(n int) func([]Card) []Card {
+	return func(c []Card) []Card {
+		var ret []Card
+
+		for i := 0; i < n; i++ {
+			ret = append(ret, c...)
+		}
+
+		return ret
+	}
+}

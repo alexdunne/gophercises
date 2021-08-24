@@ -104,4 +104,10 @@ func TestFilteringADeckOfCards(t *testing.T) {
 	}
 }
 
+func TestDesk(t *testing.T) {
+	cards := New(Deck(3))
+
+	if len(cards) != 52*3 {
+		t.Errorf("expected %d cards, got %d", 52*3, len(cards))
+	}
 }
