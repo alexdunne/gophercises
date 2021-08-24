@@ -62,6 +62,32 @@ func TestSortingWithACustomSortFunction(t *testing.T) {
 	}
 }
 
-func TestShufflingADeckOfCards(t *testing.T) {
+func TestAddingJokersToADeck(t *testing.T) {
+	type testcase struct {
+		jokers int
+	}
+
+	tests := []testcase{
+		{jokers: 5},
+		{jokers: 5},
+		{jokers: 1},
+		{jokers: 0},
+	}
+
+	for _, tc := range tests {
+		cards := New(Jokers(tc.jokers))
+		count := 0
+
+		for _, card := range cards {
+			if card.Suit == Joker {
+				count++
+			}
+		}
+
+		if count != tc.jokers {
+			t.Errorf("expected %d jokers, got %d", tc.jokers, count)
+
+		}
+	}
 
 }
