@@ -61,3 +61,7 @@ func TestSortingWithACustomSortFunction(t *testing.T) {
 		}
 	}
 }
+
+func TestShufflingADeckOfCards(t *testing.T) {
+
+}
