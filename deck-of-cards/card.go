@@ -109,6 +109,7 @@ func Shuffle(cards []Card) []Card {
 	return ret
 }
 
+// Jokers adds an arbitary number of Joker cards to the deck
 func Jokers(n int) func([]Card) []Card {
 	return func(c []Card) []Card {
 		for i := 0; i < n; i++ {
@@ -121,3 +122,19 @@ func Jokers(n int) func([]Card) []Card {
 		return c
 	}
 }
+
+// Filter calls a filter function on each card and returns a []Card of all Cards that pass the test
+func Filter(f func(c Card) bool) func([]Card) []Card {
+	return func(c []Card) []Card {
+		var ret []Card
+
+		for _, card := range c {
+			if f(card) {
+				ret = append(ret, card)
+			}
+		}
+
+		return ret
+	}
+}
+

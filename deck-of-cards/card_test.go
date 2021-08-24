@@ -86,8 +86,22 @@ func TestAddingJokersToADeck(t *testing.T) {
 
 		if count != tc.jokers {
 			t.Errorf("expected %d jokers, got %d", tc.jokers, count)
-
 		}
 	}
+}
+
+func TestFilteringADeckOfCards(t *testing.T) {
+	filter := func(c Card) bool {
+		return c.Rank != Ace
+	}
+
+	cards := New(Filter(filter))
+
+	for _, c := range cards {
+		if c.Rank == Ace {
+			t.Errorf("expected all cards with rank %s to be filtered, got %s", c.Rank.String(), c.String())
+		}
+	}
+}
 
 }
