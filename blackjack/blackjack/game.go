@@ -14,19 +14,48 @@ const (
 	stateHandOver
 )
 
+type Options struct {
+	Decks           int
+	Hands           int
+	BlackjackPayout float64
+}
+
 // New creates a new instance of a Game with default values
-func New() Game {
-	return Game{
+func New(opts Options) Game {
+	g := Game{
 		state: statePlayerTurn,
 	}
+
+	if opts.Decks == 0 {
+		opts.Decks = 3
+	}
+	if opts.Hands == 0 {
+		opts.Hands = 100
+	}
+	if opts.BlackjackPayout == 0.0 {
+		opts.BlackjackPayout = 1.5
+	}
+
+	g.numDecks = opts.Decks
+	g.numHands = opts.Hands
+	g.blackjackPayout = opts.BlackjackPayout
+
+	return g
 }
 
 type Game struct {
-	deck    []deck.Card
-	state   state
-	player  []deck.Card
-	dealer  []deck.Card
-	balance int
+	numDecks        int
+	numHands        int
+	blackjackPayout float64
+
+	state state
+	deck  []deck.Card
+
+	player    []deck.Card
+	playerBet int
+	balance   int
+
+	dealer []deck.Card
 }
 
 func (g *Game) currentHand() *[]deck.Card {
@@ -38,6 +67,11 @@ func (g *Game) currentHand() *[]deck.Card {
 	default:
 		panic("it is neither player's turn")
 	}
+}
+
+func bet(g *Game, ai AI) {
+	bet := ai.Bet()
+	g.playerBet += bet
 }
 
 // deal supplies the Player and Dealer with two cards each
@@ -67,9 +101,16 @@ func dealerPlay(hand []deck.Card) Move {
 }
 
 func (g *Game) Play(ai AI) int {
-	g.deck = deck.New(deck.Deck(3), deck.Shuffle)
+	g.deck = nil
+	minCardCount := 52 * g.numDecks / 3
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < g.numHands; i++ {
+		if len(g.deck) < minCardCount {
+			g.deck = deck.New(deck.Deck(g.numDecks), deck.Shuffle)
+		}
+
+		bet(g)
+
 		deal(g)
 
 		for g.state == statePlayerTurn {
